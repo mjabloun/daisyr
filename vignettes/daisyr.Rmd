@@ -1,0 +1,287 @@
+---
+title: "Getting started with daisyr"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with daisyr}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(daisyr)
+```
+
+## Overview
+
+daisyr drives the [Daisy](https://daisy.ku.dk/) agroecosystem model (a
+soil-crop-water-nitrogen simulator) from R for two workflows:
+
+- **Calibration** - fit free parameters against observed data using an
+  optimizer (currently `DEoptim`).
+- **Sensitivity analysis** - Morris or Sobol-Jansen designs, run externally
+  against Daisy ("decoupled" mode).
+
+Both workflows share the same substrate:
+
+1. A **parameters** YAML file describes every free parameter:
+   where it lives in a `.dai` template, its bounds, and - for parameters that
+   are shape parameters of a piecewise-linear-function (PLF) - how to turn
+   them into the `(x y) (x y) ...` sequence Daisy expects.
+2. `render_templates()` substitutes the current parameter values into
+   `.dai` template file(s), producing the concrete `.dai` file(s) Daisy will
+   run.
+3. `run_daisy()` invokes the Daisy executable.
+4. `read_dlf()` parses Daisy's `.dlf` log output.
+5. `compute_generic_objective()` (or a custom `response_fun`) turns that
+   output, plus observed data, into a score.
+
+This vignette walks through a worked example exercising every step. It's
+based on `examples/calibration/run_calibration.R` in the package source,
+which you can run directly for a plain-R-script version of the same
+workflow.
+
+```{r daisy-check, include = FALSE}
+# Point this at your local Daisy installation. If it isn't found, the
+# Daisy-running chunks below are skipped (shown as code, not evaluated) so
+# this vignette still builds on machines without Daisy installed - only the
+# schema/API-focused sections evaluate unconditionally.
+daisy_exe <- "C:/Program Files/Daisy 5.93/bin/daisy.exe"
+has_daisy <- file.exists(daisy_exe)
+example_dir <- system.file("extdata", "calibration_example", package = "daisyr")
+
+# Run all Daisy output (rendered .dai, Output/) in a scratch directory
+# rather than polluting vignettes/ with generated files.
+run_dir <- tempfile("daisyr-vignette-")
+dir.create(run_dir)
+knitr::opts_knit$set(root.dir = run_dir)
+```
+
+```{r echo=FALSE, results='asis'}
+if (!has_daisy) {
+  cat("_Note: this build of the vignette did not find a local Daisy installation, ",
+      "so the simulation-running code chunks below are shown but not evaluated._\n")
+}
+```
+
+## The scenario
+
+The example calibrates two parameters of a single soil horizon - clay
+content (`Ap_clay`) and dry bulk density (`Ap_bulk_density`) - against two
+monthly soil-water-content readings, using a small `.dai` case adapted from
+Daisy's own `sample/test-minimize.dai`. The template and observed data ship
+with the package under `inst/extdata/calibration_example/`.
+
+## 1. Parameters
+
+The example ships as `parameters.yaml` under `calibration_example/`.
+
+```{r echo=FALSE, comment=""}
+cat(readLines(file.path(example_dir, "parameters.yaml")), sep = "\n")
+```
+
+Load and validate it - `validate_param_config()` checks that every declared
+`{{name}}` placeholder exists exactly once in its template file, catching
+typos before any simulation is run:
+
+```{r config}
+config <- read_param_config(file.path(example_dir, "parameters.yaml"))
+validate_param_config(config, template_dir = example_dir)
+config$parameters
+```
+
+`param_config_names()` lists every free parameter (used positionally by
+[calibrate_daisy()] and [sa_design()]):
+
+```{r param-names}
+param_config_names(config)
+```
+
+## 2. Rendering templates
+
+`render_templates()` substitutes the current parameter values into every
+`(from_file, to_file)` pair declared in the parameters file:
+
+```{r render, eval = has_daisy}
+default_values <- stats::setNames(config$parameters$default, config$parameters$name)
+render_templates(config, values = default_values, template_dir = example_dir, output_dir = ".")
+```
+
+Placeholders use double braces (`{{name}}`), not single braces - Daisy's own
+`.dai` syntax uses single-brace-free `${...}` for internal self-reference
+(e.g. inside a `deflog`), so single-brace placeholders would collide with
+that.
+
+## 3. Running Daisy and reading output
+
+```{r run, eval = has_daisy}
+run_daisy("test-optim.dai", daisy_exe = daisy_exe, working_dir = ".")
+
+sim <- read_dlf("Output/interval_water_content.dlf")
+sim <- add_date(sim, "interval_water_content")
+sim[, .(Date, hour, tocalibrate)]
+```
+
+`read_dlf()` handles both the standard `.dlf` format (a `----` separator
+line before the header) and files written with `print_header false`/
+`print_dimension false`.
+
+## 4. Defining and evaluating the objective
+
+The Daisy log is hourly; we average to daily so it lines up with the
+monthly-snapshot observed dates, then compare with
+[compute_generic_objective()] via an [objective_spec()]:
+
+```{r objective, eval = has_daisy}
+obs <- data.table::fread(file.path(example_dir, "observed_data.txt"))
+obs[, Date := as.Date(Date, format = "%Y/%m/%d")]
+
+daily_sim_reader <- function(path) {
+  sim <- add_date(read_dlf(path), "sim")
+  sim[, .(tocalibrate = mean(tocalibrate)), by = Date]
+}
+
+objective <- objective_spec(
+  obs_data   = obs,
+  value_map  = list(list(obs_col = "Theta", sim_col = "tocalibrate", label = "Topsoil (0-15cm)")),
+  sim_reader = daily_sim_reader,
+  metric     = "RMSE"
+)
+
+evaluate_objective(objective, "Output/interval_water_content.dlf", return_per_pair = TRUE)
+```
+
+`value_map` supports multiple weighted obs/sim column pairs at once (e.g.
+several depths or several output variables) - see `?compute_generic_objective`.
+
+## 5. Calibration
+
+`calibrate_daisy()` wraps the render -> run -> score loop in an optimizer
+(`DEoptim` by default; also `BOBYQA`, `multi-BOBYQA`, `DDS`, `CMA-ES`),
+using each parameter's `min`/`max` as bounds:
+
+```{r calibrate, eval = has_daisy}
+fit <- calibrate_daisy(
+  config     = config,
+  run_file     = "test-optim.dai",
+  daisy_exe    = daisy_exe,
+  objective    = objective,
+  sim_file     = "Output/interval_water_content.dlf",
+  working_dir  = ".",
+  template_dir = example_dir, output_dir = ".",
+  control      = list(itermax = 15, NP = 10)
+)
+
+fit$best_params
+fit$best_score
+```
+
+## 6. Sensitivity analysis
+
+`sa_design()` builds a decoupled Morris (or Sobol-Jansen) design over every
+every parameter; `run_sa_design()` evaluates it externally via Daisy;
+`complete_sa_analysis()` attaches the responses to compute indices; and
+`plot_sa()` draws them (Morris \eqn{\mu^*} vs \eqn{\sigma} by default):
+
+```{r sensitivity, eval = has_daisy}
+daily_sim_reader_from_dt <- function(sim_dt) {
+  sim_dt <- add_date(sim_dt, "sim")
+  sim_dt[, .(tocalibrate = mean(tocalibrate)), by = Date]
+}
+
+design <- sa_design(config, method = "morris", r = 4,
+                     design = list(type = "oat", levels = 4, grid.jump = 2), seed = 1)
+
+sa_results <- run_sa_design(
+  design, config, run_file = "test-optim.dai", daisy_exe = daisy_exe,
+  working_dir = ".", template_dir = example_dir, output_dir = ".",
+  output_files = c(swc = "Output/interval_water_content.dlf"),
+  response_fun = function(outputs) {
+    daily <- daily_sim_reader_from_dt(outputs$swc)
+    compute_generic_objective(
+      obs_data = obs, sim_data = daily,
+      value_map = list(list(obs_col = "Theta", sim_col = "tocalibrate")),
+      metric = "RMSE"
+    )$summary
+  }
+)
+
+sa <- complete_sa_analysis(design, sa_results$responses)
+sa
+plot_sa(sa)
+```
+
+Note that Morris elementary-effects designs are meant to explore
+multi-parameter interactions - `sigma` (the non-linearity/interaction
+indicator) isn't meaningful for a single-parameter design, which is why this
+example uses two parameters rather than one.
+
+## Piecewise-linear-function (PLF) parameters
+
+Some Daisy parameters are piecewise linear functions - a sequence of `(x y)`
+pairs where `x` must be strictly increasing (e.g. LAI vs. development stage).
+Calibrating every `y` independently doesn't scale and risks producing
+non-physical curves, so daisyr supports generating the whole sequence from a
+handful of shape parameters of a monotonic curve family, via a `plf_curves`
+entry in the parameters file:
+
+```yaml
+parameters:
+  - name: LAIvsDS_L
+    default: 5
+    min: 3
+    max: 7
+  - name: LAIvsDS_k
+    default: 2
+    min: 0.5
+    max: 5
+  - name: LAIvsDS_x0
+    default: 0.7
+    min: 0.3
+    max: 1.2
+
+plf_curves:
+  - name: LAIvsDS
+    from_file: dk-crop_template.dai
+    to_file: dk-crop.dai
+    placeholder: LAIvsDS_BLOCK   # a single {{LAIvsDS_BLOCK}} in the template
+    x_values: [-0.3, 0.0, 1.0, 2.0]   # fixed knots, never calibrated
+    curve: logistic
+    params: [LAIvsDS_L, LAIvsDS_k, LAIvsDS_x0]
+```
+
+`render_templates()` evaluates the curve at the fixed `x_values` and
+substitutes the whole `(x1 y1) (x2 y2) ...` block into the named placeholder.
+Built-in curve families ([known_plf_curves()]) are `logistic`, `gompertz`,
+`richards`, and `exponential`; [register_plf_curve()] adds custom ones. All
+of the built-ins are monotonic for sensible parameter ranges, so x-monotonicity
+of the resulting PLF is never at risk - only the shape parameters are
+calibrated/varied, never the `x` knots.
+
+```{r plf-curve}
+x <- c(-0.3, 0.0, 1.0, 2.0)
+y <- render_plf_curve("logistic", x, c(5, 2, 0.7))   # L, k, x0
+format_plf_block(x, y)
+```
+
+To see what each built-in family looks like before picking one for a
+`plf_curves` entry, `plot_plf_curves()` (or `known_plf_curves(plot = TRUE)`)
+draws an example of each using representative default shape parameters:
+
+```{r plot-plf-curves, fig.width=6, fig.height=4}
+plot_plf_curves()
+```
+
+Individual PLF points can still be calibrated directly (without a curve fit)
+as a plain scalar parameter with `plf` metadata for documentation - see
+`?read_param_config`.
+
+```{r cleanup, include = FALSE}
+unlink(run_dir, recursive = TRUE)
+```

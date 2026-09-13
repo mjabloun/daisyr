@@ -1,0 +1,46 @@
+Package: daisyr
+Title: Sensitivity Analysis and Calibration Tools for the Daisy Model
+Version: 0.0.0.9000
+Authors@R: 
+    person("Mohamed Jabloun", role = c("aut", "cre"), email = "daisyr@example.com")
+Description: Tools for driving the Daisy agroecosystem model (soil-crop-water-
+    nitrogen simulation) from R. Provides a YAML parameters file for describing
+    free parameters (including piecewise linear function shape parameters)
+    that live inside one or more '.dai' setup files, template rendering to
+    generate concrete '.dai' files, helpers to run the Daisy executable and
+    parse its '.dlf' log output, generic objective functions for comparing
+    simulated to observed data, decoupled Morris/Sobol sensitivity analysis,
+    DEoptim-based calibration (also BOBYQA, multi-BOBYQA, DDS, and CMA-ES), space-filling metamodel designs, and Kriging /
+    EGO surrogate-assisted calibration workflows built on top of these
+    primitives.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Suggests: 
+    DiceDesign,
+    DiceEval,
+    DiceKriging,
+    DiceOptim,
+    DEoptim,
+    ggplot2,
+    ggrepel,
+    knitr,
+    lhs,
+    minqa,
+    cmaes,
+    randtoolbox,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Imports: 
+    data.table,
+    glue,
+    graphics,
+    grDevices,
+    hydroGOF,
+    sensitivity,
+    stats,
+    utils,
+    yaml
+VignetteBuilder: knitr

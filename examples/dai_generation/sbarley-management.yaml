@@ -1,0 +1,44 @@
+# Example: reproduces "SBarley w. MF" and "SBarley w. OF" from
+# dk-management.dai, via yaml_to_dai(). Demonstrates: mineral vs organic
+# fertilizer, a compound {ds, mm_dd} harvest condition ("whichever comes
+# first"), and the sow 'seed_bed: true' convenience.
+#
+#   yaml_to_dai("examples/sbarley-management.yaml", "sbarley-management.dai")
+
+version: "1.0"
+libraries: ["fertilizer.dai", "tillage.dai", "crop.dai"]
+
+activities:
+  - name: "SBarley w. MF"
+    field_operations:
+      - fertilise: {date: "03-05", product: N25S, weight: 115}
+      - plow: {}
+      - sow:
+          date: "04-05"
+          seed_bed: true
+          crop: "Spring Barley"
+      - harvest:
+          date: {ds: 2.0, mm_dd: "08-20"}
+          crop: "Spring Barley"
+          stub: {value: 8, unit: cm}
+          stem: 0.70
+
+  - name: "SBarley w. OF"
+    field_operations:
+      - fertilise:
+          date: "03-05"
+          product: pig_slurry
+          weight: 28
+          unit: "T w.w./ha"
+          volatilization: 5
+          to: -1
+      - plow: {}
+      - sow:
+          date: "04-05"
+          seed_bed: true
+          crop: "Spring Barley"
+      - harvest:
+          date: {ds: 2.0, mm_dd: "08-20"}
+          crop: "Spring Barley"
+          stub: {value: 8, unit: cm}
+          stem: 0.70

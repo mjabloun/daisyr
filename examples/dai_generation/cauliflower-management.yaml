@@ -1,0 +1,31 @@
+# Example: reproduces the "Cauliflower - transplanted management" defaction
+# drafted in this project's cauliflower-daisy-model.md, via yaml_to_dai().
+#
+#   yaml_to_dai("examples/cauliflower-management.yaml", "cauliflower-man.dai")
+
+version: "1.0"
+libraries: ["dk-veg-man.dai"]   # for KAS, "NPK 14-3-18", N15B, "irrigation"
+
+activities:
+  - name: "Cauliflower - transplanted management"
+    field_operations:
+      - plow: {date: "04-01"}
+      - fertilise: {date: "05-10", product: KAS, weight: 100}
+      - harrow: {}
+      - sow:
+          seed_bed: true
+          crop: "Cauliflower - transplanted"
+      - irrigate_until: {date: "06-15", repeat: irrigation}
+      - fertilise: {product: "NPK 14-3-18", weight: 100}
+      - irrigate_until: {date: "07-15", repeat: irrigation}
+      - fertilise: {product: N15B, weight: 60}
+      - irrigate_until:
+          date: {ds: 1.8, mm_dd: "10-01"}
+          crop: "Cauliflower - transplanted"
+          repeat: irrigation
+      - harvest:
+          crop: "Cauliflower - transplanted"
+          stub: {value: 0.0, unit: cm}
+          sorg: 1.0
+          stem: 0.0
+          leaf: 0.0

@@ -1,0 +1,6 @@
+(defhorizon Ap FAO3
+  "Andeby top soil."
+  (clay {{Ap_clay}})
+  (normalize true)
+  (silt 10.5 [%]) (sand 81.5 [%]) (humus 1.12 [%])
+  (dry_bulk_density 1.5 [g/cm^3]))

@@ -1,0 +1,21 @@
+;;; plf_sample.dai -- fixture for read_plf()/plot_plf() tests
+
+(defcrop "Test Crop" default
+  (Devel default
+    (TempEff1 (0.0  0.0) (4.0  0.01)  ; a comment in the middle of the PLF
+              (19.0 1.0) (24.0 1.0)
+              (30.0 0.01))
+  )
+)
+
+(defcrop "Other Crop" default
+  (Devel default
+    (TempEff1 (0.0 0.0) (10.0 1.0))
+  )
+)
+
+(defcrop "Single Line Crop" default
+  (Devel default
+    (SingleLinePLF (-0.3 0.0) (0.0 0.5) (1.0 5.0) (2.0 0.0))
+  )
+)

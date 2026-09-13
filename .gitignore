@@ -1,0 +1,46 @@
+# History and session data
+.Rhistory
+.Rapp.history
+.RData
+.RDataTmp
+.Ruserdata
+.Renviron
+.Rprofile
+
+# RStudio
+.Rproj.user/
+
+# Package build and check
+/*.Rcheck/
+/.check-lib/
+src/*.o
+src/*.so
+src/*.dll
+*-Ex.R
+inst/doc
+
+# Vignettes (keep sources; ignore knitted output)
+vignettes/*.html
+vignettes/*.pdf
+vignettes/*.R
+*_cache/
+/cache/
+*.utf8.md
+*.knit.md
+
+# Local Daisy / example run artefacts
+Output/
+*.log
+daisy.log
+
+# Secrets and local tokens
+.httr-oauth
+*.pem
+*.key
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*~
+.vscode/
+.idea/

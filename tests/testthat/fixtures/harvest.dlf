@@ -1,0 +1,9 @@
+dlf-0.0 -- harvest
+
+VERSION: 5.93
+LOGFILE: harvest.dlf
+
+--------------------
+year	month	day	column	crop	stem_DM	stem_N
+					Mg DM/ha	kg N/ha
+1993	8	9	Fine sandy loam	Spring Barley	4.69988	39.608

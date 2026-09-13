@@ -1,0 +1,3 @@
+(defcrop "Spring Barley" "Grass to grain"
+  (LeafPhot
+    (LAIvsDS {{LAIvsDS_BLOCK}})))

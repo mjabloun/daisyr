@@ -1,0 +1,30 @@
+parameters:
+  - name: Ap_clay
+    from_file: horizon_template.dai
+    to_file: horizon.dai
+    default: 0.08
+    min: 0.05
+    max: 0.10
+
+  - name: LAIvsDS_L
+    default: 5
+    min: 3
+    max: 7
+  - name: LAIvsDS_k
+    default: 2
+    min: 0.5
+    max: 5
+  - name: LAIvsDS_x0
+    default: 0.7
+    min: 0.3
+    max: 1.2
+
+plf_curves:
+  - name: LAIvsDS
+    from_file: crop_template.dai
+    to_file: crop.dai
+    placeholder: LAIvsDS_BLOCK
+    x_values: [-0.3, 0.0, 1.0, 2.0]
+    curve: logistic
+    params: [LAIvsDS_L, LAIvsDS_k, LAIvsDS_x0]
+    format: "%.3f"

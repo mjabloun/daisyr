@@ -1,0 +1,142 @@
+# Example: reproduces a real, complete, runnable West/Soil_Column .dai
+# script via yaml_to_dai() -- directory/path, defhorizon x4, defcolumn,
+# defcrop, defaction x3 (including the grass-specific `cut` operation and
+# a composite activity built purely from other named activities), and
+# defprogram x2 (a base program and one inheriting from it), finishing
+# with a standalone `run`.
+#
+#   yaml_to_dai("examples/west-soil-column.yaml", "west-soil-column.dai")
+
+directory: "C:/JHI/Projects/RESAS/C3/Grass/Field_Data/West/Daisy"
+path:
+  - "C:/Program Files/Daisy 5.93/lib"
+  - "./"
+
+libraries: ["tillage.dai", "crop.dai", "fertilizer.dai", "log.dai"]
+
+horizons:
+  - name: "Hor_25"
+    texture_class: FAO3
+    dry_bulk_density: {value: 1.46, unit: "g/cm^3"}
+    clay: {value: 0.22, unit: ""}
+    silt: {value: 0.27, unit: ""}
+    sand: {value: 0.51, unit: ""}
+    humus: {value: 0.0722, unit: ""}
+    hydraulic: Cosby_et_al
+  - name: "Hor_50"
+    texture_class: FAO3
+    dry_bulk_density: {value: 1.62, unit: "g/cm^3"}
+    clay: {value: 0.30, unit: ""}
+    silt: {value: 0.27, unit: ""}
+    sand: {value: 0.43, unit: ""}
+    humus: {value: 0.0217, unit: ""}
+    hydraulic: Cosby_et_al
+  - name: "Hor_72"
+    texture_class: FAO3
+    dry_bulk_density: {value: 1.62, unit: "g/cm^3"}
+    clay: {value: 0.26, unit: ""}
+    silt: {value: 0.27, unit: ""}
+    sand: {value: 0.47, unit: ""}
+    humus: {value: 0.0251, unit: ""}
+    hydraulic: Cosby_et_al
+  - name: "Hor_100"
+    texture_class: FAO3
+    dry_bulk_density: {value: 1.59, unit: "g/cm^3"}
+    clay: {value: 0.28, unit: ""}
+    silt: {value: 0.30, unit: ""}
+    sand: {value: 0.42, unit: ""}
+    humus: {value: 0.0302, unit: ""}
+    hydraulic: Cosby_et_al
+
+columns:
+  - name: "Soil_Column"
+    # based_on: default   # optional; "default" is the implicit value
+    Soil:
+      MaxRootingDepth: {value: 100, unit: "cm"}
+      horizons:
+        - {depth: -25, unit: "cm", horizon: "Hor_25"}
+        - {depth: -50, unit: "cm", horizon: "Hor_50"}
+        - {depth: -72, unit: "cm", horizon: "Hor_72"}
+        - {depth: -100, unit: "cm", horizon: "Hor_100"}
+    Movement:
+      type: vertical
+      zplus: [-2.5, -5, -10, -15, -25, -40, -50, -60, -72, -80, -90, -100]
+    Groundwater: deep
+
+crops:
+  - name: "Grass Scotland"
+    based_on: "Grass to grain"
+    comment: "Growing of grass for cutting"
+    enable_N_stress: false
+    water_stress_effect: none
+
+activities:
+  - name: "Sowing Grass"
+    field_operations:
+      - fertilise:
+          date: {mm_dd: "01-20"}
+          product: cattle_slurry
+          volatilization: 5
+          weight: 20
+          unit: "T w.w./ha"
+          to: -1
+      - plow: {}
+      - sow:
+          date: {mm_dd: "01-30"}
+          seed_bed: true
+          crop: "Grass Scotland"
+
+  - name: "Grass - cuts"
+    field_operations:
+      - comment: "1994"
+      - cut: {date: {mm_dd: "12-31"}, crop: "Grass Scotland", stub: {value: 8, unit: "cm"}, stem: 0.00, leaf: 0.00}
+      - comment: "1995"
+      - cut: {date: {mm_dd: "06-09"}, crop: "Grass Scotland", stub: {value: 8, unit: "cm"}, stem: 0.90, leaf: 0.90}
+      - cut: {date: {mm_dd: "07-20"}, crop: "Grass Scotland", stub: {value: 8, unit: "cm"}, stem: 0.90, leaf: 0.90}
+      - cut: {date: {mm_dd: "08-31"}, crop: "Grass Scotland", stub: {value: 8, unit: "cm"}, stem: 0.90, leaf: 0.90}
+      - cut: {date: {mm_dd: "10-10"}, crop: "Grass Scotland", stub: {value: 8, unit: "cm"}, stem: 0.90, leaf: 0.90}
+      - cut: {date: {mm_dd: "10-25"}, crop: "Grass Scotland", stub: {value: 8, unit: "cm"}, stem: 0.90, leaf: 0.90}
+      # ... further years follow the same wait/cut pattern
+
+  - name: "Grass for cutting"
+    field_operations:
+      - use_activity: "Sowing Grass"
+      - use_activity: "Grass - cuts"
+
+programs:
+  - name: "Common"
+    type: Daisy
+    comment: "Program containing common parts"
+    weather: none
+    column: "Soil_Column"
+    time: {year: 1994, month: 1, day: 1}
+    stop: {year: 1997, month: 12, day: 31}
+    manager:
+      - "Grass for cutting"
+    output:
+      - harvest
+      - name: "Crop Production"
+        when: daily
+        print_header: false
+        print_dimension: false
+      - name: "Field water"
+        to: {value: -100, unit: "cm"}
+        when: daily
+        where: "Daily_FWB.dlf"
+        print_header: false
+        print_dimension: false
+      - name: "Field nitrogen"
+        to: {value: -100, unit: "cm"}
+        when: daily
+        where: "Daily_FNB.dlf"
+        print_header: false
+        print_dimension: false
+
+  - name: "west"
+    based_on: "Common"
+    weather: {file: "West.dwf"}
+    description: "west runs"
+    log_prefix: "west_"
+
+run:
+  - "west"
