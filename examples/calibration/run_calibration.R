@@ -2,8 +2,7 @@
 # content and bulk density) against observed soil-water-content data, using
 # the real Daisy executable.
 #
-# Scenario: R-DAISY_v2/Example's "Andeby" test case (adapted from Daisy's own
-# sample/test-minimize.dai). Two free parameters, Ap_clay and
+# Two free parameters, Ap_clay and
 # Ap_bulk_density (properties of the Ap horizon), are calibrated against two
 # monthly soil water content readings in "observed_data.txt". Using two
 # parameters (rather than just one) also makes the Morris sensitivity
