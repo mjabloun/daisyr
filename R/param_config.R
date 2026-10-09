@@ -3,19 +3,20 @@
 #' The file describes every free parameter used for calibration and/or
 #' sensitivity analysis, including where it lives in the `.dai` templates and
 #' (for piecewise linear function shape parameters) how it feeds into a
-#' `plf_curves` entry (see the `curve` argument of [render_plf_curve()]).
+#' `plf_curves` entry (see the `curve` argument of [render_plf_curve()]) or
+#' a `partit` entry (see [render_partit()]).
 #'
 #' See `vignette("daisyr", package = "daisyr")` for a worked example.
-#' In short, the YAML file has two top-level keys:
+#' In short, the YAML file has three top-level keys:
 #'
 #' \describe{
 #'   \item{`parameters`}{A list of scalar parameters. Each entry has `name`
 #'     and either (a) `default`/`min`/`max` for a free parameter, plus
 #'     `from_file`/`to_file` when it is substituted into a `{{name}}`
 #'     placeholder (optionally with `plf` metadata), or no `from_file` when
-#'     it is only referenced by a `plf_curves` entry's `params`; or (b)
-#'     `expression` instead of `default`, an arithmetic formula in other
-#'     parameter names (e.g. `1 - Ap_silt - Ap_sand`). An `expression`
+#'     it is only referenced by a `plf_curves` or `partit` entry's `params`;
+#'     or (b) `expression` instead of `default`, an arithmetic formula in
+#'     other parameter names (e.g. `1 - Ap_silt - Ap_sand`). An `expression`
 #'     parameter is still written to its `{{name}}` placeholder, but it is
 #'     not a free calibration/SA input: its value is computed after the free
 #'     parameters are set. Optional `min`/`max` on an `expression` entry are
@@ -26,6 +27,15 @@
 #'     (fixed, never calibrated), `curve` (one of [known_plf_curves()]), and
 #'     `params` (names of `parameters` entries feeding the curve, in the
 #'     order the curve function expects them).}
+#'   \item{`partit`}{A list of shoot-partitioning generators (see
+#'     [render_partit()]). Each entry has `name`, `from_file`, `to_file`,
+#'     `placeholder` (conventionally `{{Name_PARTIT}}`), `x_values` (fixed
+#'     development-stage knots), and `params`: four shape-parameter names,
+#'     in order `sorg_steepness`, `sorg_centre`, `leaf_steepness`,
+#'     `leaf_centre`. One placeholder is replaced by both the `(Leaf ...)`
+#'     and `(Stem ...)` tables. A shape parameter belongs to either a
+#'     `plf_curves` entry or a `partit` entry, not both. `partit` can sit
+#'     in the same file as `plf_curves`.}
 #' }
 #'
 #' @param path Character scalar. Path to the YAML parameters file.
@@ -33,7 +43,8 @@
 #' @return An object of class `daisyr_param_config`, a list with elements
 #'   `parameters` (a `data.table`, one row per scalar parameter, with an added
 #'   `role` column: `"direct"`, `"curve_input"`, or `"derived"`), `plf_curves`
-#'   (a list of curve specifications), and `derived_expressions` (compiled
+#'   (a list of curve specifications), `partit` (a list of shoot-partitioning
+#'   specifications, empty if none), and `derived_expressions` (compiled
 #'   `expression` formulas in evaluation order, empty if none).
 #' @export
 read_param_config <- function(path) {
@@ -92,21 +103,30 @@ read_param_config <- function(path) {
   })
   names(plf_curves) <- vapply(plf_curves, function(pc) pc$name, character(1))
 
+  partit <- .parse_partit_entries(raw$partit)
+
   # An `expression` entry is derived (computed, not free). Every remaining
-  # name referenced by a plf_curves entry is a "curve_input"; everything
-  # else must be "direct" (i.e. have its own from_file/to_file).
-  curve_input_names <- unique(unlist(lapply(plf_curves, function(pc) pc$params)))
+  # name referenced by a plf_curves or partit entry is a "curve_input";
+  # everything else must be "direct" (i.e. have its own from_file/to_file).
+  plf_input_names <- unique(unlist(lapply(plf_curves, function(pc) pc$params)))
+  partit_input_names <- unique(unlist(lapply(partit, function(pt) pt$params)))
+  shared_inputs <- intersect(plf_input_names, partit_input_names)
+  if (length(shared_inputs) > 0)
+    stop("Parameter(s) cannot be inputs to both plf_curves and partit: ",
+         paste(shared_inputs, collapse = ", "))
+  curve_input_names <- unique(c(plf_input_names, partit_input_names))
   params[, role := ifelse(!is.na(expression) & nzchar(expression), "derived",
                    ifelse(name %in% curve_input_names, "curve_input", "direct"))]
 
   derived_on_curve <- intersect(params$name[params$role == "derived"], curve_input_names)
   if (length(derived_on_curve) > 0)
-    stop("Parameter(s) with an expression cannot also be plf_curves inputs: ",
+    stop("Parameter(s) with an expression cannot also be plf_curves or partit inputs: ",
          paste(derived_on_curve, collapse = ", "))
 
   derived_expressions <- .compile_derived_expressions(params)
 
   config <- list(parameters = params[], plf_curves = plf_curves,
+                 partit = partit,
                  derived_expressions = derived_expressions)
   class(config) <- "daisyr_param_config"
   validate_param_config_structure(config)
@@ -300,10 +320,10 @@ plot_plf_curves <- function(x = seq(-1, 1, length.out = 200),
 #' Checks performed independently of any `.dai` template files: every
 #' `direct` or `derived` parameter has both `from_file` and `to_file`; every
 #' `curve_input` parameter has neither (it's only meaningful inside its
-#' `plf_curves` entry); every name referenced by a `plf_curves` entry's
-#' `params` exists in `parameters`; and every `curve` name is either a
-#' built-in ([known_plf_curves()]) or has been registered via
-#' [register_plf_curve()].
+#' `plf_curves` or `partit` entry); every name referenced by a `plf_curves`
+#' or `partit` entry's `params` exists in `parameters`; and every `curve`
+#' name is either a built-in ([known_plf_curves()]) or has been registered
+#' via [register_plf_curve()].
 #'
 #' @param config A `daisyr_param_config` object, as returned by
 #'   [read_param_config()].
@@ -320,7 +340,7 @@ validate_param_config_structure <- function(config) {
   curve_input <- params[role == "curve_input"]
   bad_curve_input <- curve_input[!is.na(from_file) | !is.na(to_file)]
   if (nrow(bad_curve_input) > 0)
-    stop("Parameter(s) consumed by a plf_curves entry should not also have ",
+    stop("Parameter(s) consumed by a plf_curves or partit entry should not also have ",
          "their own from_file/to_file (they are written only via the curve): ",
          paste(bad_curve_input$name, collapse = ", "))
 
@@ -333,6 +353,22 @@ validate_param_config_structure <- function(config) {
       stop(sprintf("plf_curves entry '%s' uses unknown curve '%s' - register it with register_plf_curve() first",
                     pc$name, pc$curve))
   }
+
+  partit <- config$partit %||% list()
+  for (pt in partit) {
+    missing_params <- setdiff(pt$params, params$name)
+    if (length(missing_params) > 0)
+      stop(sprintf("partit entry '%s' references unknown parameter(s): %s",
+                    pt$name, paste(missing_params, collapse = ", ")))
+  }
+
+  ph_plf <- vapply(config$plf_curves, function(pc) pc$placeholder, character(1))
+  ph_partit <- vapply(partit, function(pt) pt$placeholder, character(1))
+  ph_all <- c(ph_plf, ph_partit)
+  if (anyDuplicated(ph_all) > 0)
+    stop("Duplicate placeholder(s) across plf_curves and partit: ",
+         paste(unique(ph_all[duplicated(ph_all)]), collapse = ", "))
+
   invisible(TRUE)
 }
 
@@ -381,6 +417,12 @@ validate_param_config <- function(config, template_dir = ".") {
       problems <- c(problems, sprintf("plf_curves '%s': x_values must be strictly increasing", pc$name))
   }
 
+  for (pt in config$partit %||% list()) {
+    check_placeholder(pt$from_file, pt$placeholder, sprintf("partit '%s'", pt$name))
+    if (is.unsorted(pt$x_values, strictly = TRUE))
+      problems <- c(problems, sprintf("partit '%s': x_values must be strictly increasing", pt$name))
+  }
+
   if (length(problems) > 0)
     stop("Parameter validation failed:\n  - ", paste(problems, collapse = "\n  - "), call. = FALSE)
 
@@ -391,7 +433,8 @@ validate_param_config <- function(config, template_dir = ".") {
 #'
 #' The flattened set of names that calibration/sensitivity-analysis code
 #' should treat as inputs: every `direct` parameter plus every
-#' `curve_input` parameter (the shape parameters of any `plf_curves`).
+#' `curve_input` parameter (the shape parameters of any `plf_curves` or
+#' `partit` entry).
 #' Derived parameters (`expression` entries) are omitted: they are computed from
 #' the free names, not sampled.
 #'
@@ -417,10 +460,11 @@ param_config_default_values <- function(config) {
   .apply_param_expressions(config, values)
 }
 
-#' Expand a name selection so each PLF curve is kept as a unit
+#' Expand a name selection so each PLF curve and Partit block is kept as a unit
 #'
-#' If any shape parameter of a `plf_curves` entry is included, the rest of
-#' that curve's `params` are added. Direct parameters are unchanged.
+#' If any shape parameter of a `plf_curves` or `partit` entry is included,
+#' the rest of that entry's `params` are added. Direct parameters are
+#' unchanged.
 #'
 #' @param config A `daisyr_param_config` object.
 #' @param names Character vector of parameter names (may be `NULL` or empty
@@ -440,6 +484,10 @@ expand_calibrate_names <- function(config, names = NULL) {
   for (pc in config$plf_curves) {
     if (length(intersect(names, pc$params)))
       names <- union(names, pc$params)
+  }
+  for (pt in config$partit %||% list()) {
+    if (length(intersect(names, pt$params)))
+      names <- union(names, pt$params)
   }
   missing <- setdiff(names, all_n)
   if (length(missing))

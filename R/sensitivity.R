@@ -2,8 +2,8 @@
 #'
 #' Wraps `sensitivity::morris()`/`sensitivity::soboljansen()` in "decoupled"
 #' mode (`model = NULL`), using every free parameter in `config`
-#' ([param_config_names()]) - i.e. direct parameters and `plf_curves`
-#' shape parameters alike - as the design columns, with bounds taken from
+#' ([param_config_names()]) - i.e. direct parameters and `plf_curves` /
+#' `partit` shape parameters alike - as the design columns, with bounds taken from
 #' the config's `min`/`max` columns. Decoupled mode is used because Daisy
 #' runs are expensive external processes, not plain R functions: the design
 #' matrix is generated up front, evaluated externally with [run_sa_design()],

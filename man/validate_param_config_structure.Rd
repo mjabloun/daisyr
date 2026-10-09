@@ -12,10 +12,11 @@ validate_param_config_structure(config)
 }
 \description{
 Checks performed independently of any \code{.dai} template files: every
-\code{direct} parameter has both \code{from_file} and \code{to_file}; every \code{curve_input}
-parameter has neither (it's only meaningful inside its \code{plf_curves} entry);
-every name referenced by a \code{plf_curves} entry's \code{params} exists in
-\code{parameters}; and every \code{curve} name is either a built-in
-(\code{\link[=known_plf_curves]{known_plf_curves()}}) or has been registered via \code{\link[=register_plf_curve]{register_plf_curve()}}.
+\code{direct} or \code{derived} parameter has both \code{from_file} and \code{to_file}; every
+\code{curve_input} parameter has neither (it's only meaningful inside its
+\code{plf_curves} or \code{partit} entry); every name referenced by a \code{plf_curves}
+or \code{partit} entry's \code{params} exists in \code{parameters}; and every \code{curve}
+name is either a built-in (\code{\link[=known_plf_curves]{known_plf_curves()}}) or has been registered
+via \code{\link[=register_plf_curve]{register_plf_curve()}}.
 }
 \keyword{internal}

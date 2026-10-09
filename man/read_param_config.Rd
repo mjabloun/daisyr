@@ -13,27 +13,29 @@ read_param_config(path)
 An object of class \code{daisyr_param_config}, a list with elements
 \code{parameters} (a \code{data.table}, one row per scalar parameter, with an added
 \code{role} column: \code{"direct"}, \code{"curve_input"}, or \code{"derived"}), \code{plf_curves}
-(a list of curve specifications), and \code{derived_expressions} (compiled
+(a list of curve specifications), \code{partit} (a list of shoot-partitioning
+specifications, empty if none), and \code{derived_expressions} (compiled
 \code{expression} formulas in evaluation order, empty if none).
 }
 \description{
 The file describes every free parameter used for calibration and/or
 sensitivity analysis, including where it lives in the \code{.dai} templates and
 (for piecewise linear function shape parameters) how it feeds into a
-\code{plf_curves} entry (see the \code{curve} argument of \code{\link[=render_plf_curve]{render_plf_curve()}}).
+\code{plf_curves} entry (see the \code{curve} argument of \code{\link[=render_plf_curve]{render_plf_curve()}}) or
+a \code{partit} entry (see \code{\link[=render_partit]{render_partit()}}).
 }
 \details{
 See \code{vignette("daisyr", package = "daisyr")} for a worked example.
-In short, the YAML file has two top-level keys:
+In short, the YAML file has three top-level keys:
 
 \describe{
 \item{\code{parameters}}{A list of scalar parameters. Each entry has \code{name}
 and either (a) \code{default}/\code{min}/\code{max} for a free parameter, plus
 \code{from_file}/\code{to_file} when it is substituted into a \code{{{name}}}
 placeholder (optionally with \code{plf} metadata), or no \code{from_file} when
-it is only referenced by a \code{plf_curves} entry's \code{params}; or (b)
-\code{expression} instead of \code{default}, an arithmetic formula in other
-parameter names (e.g. \code{1 - Ap_silt - Ap_sand}). An \code{expression}
+it is only referenced by a \code{plf_curves} or \code{partit} entry's \code{params};
+or (b) \code{expression} instead of \code{default}, an arithmetic formula in
+other parameter names (e.g. \code{1 - Ap_silt - Ap_sand}). An \code{expression}
 parameter is still written to its \code{{{name}}} placeholder, but it is
 not a free calibration/SA input: its value is computed after the free
 parameters are set. Optional \code{min}/\code{max} on an \code{expression} entry are
@@ -44,5 +46,14 @@ entry has \code{name}, \code{from_file}, \code{to_file}, \code{placeholder}, \co
 (fixed, never calibrated), \code{curve} (one of \code{\link[=known_plf_curves]{known_plf_curves()}}), and
 \code{params} (names of \code{parameters} entries feeding the curve, in the
 order the curve function expects them).}
+\item{\code{partit}}{A list of shoot-partitioning generators (see
+\code{\link[=render_partit]{render_partit()}}). Each entry has \code{name}, \code{from_file}, \code{to_file},
+\code{placeholder} (conventionally \code{{{Name_PARTIT}}}), \code{x_values} (fixed
+development-stage knots), and \code{params}: four shape-parameter names,
+in order \code{sorg_steepness}, \code{sorg_centre}, \code{leaf_steepness},
+\code{leaf_centre}. One placeholder is replaced by both the \verb{(Leaf ...)}
+and \verb{(Stem ...)} tables. A shape parameter belongs to either a
+\code{plf_curves} entry or a \code{partit} entry, not both. \code{partit} can sit
+in the same file as \code{plf_curves}.}
 }
 }

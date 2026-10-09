@@ -20,7 +20,7 @@ For Sobol, \code{"bar"} (default) or \code{"ranked"}.}
 }
 \value{
 Invisibly, a \code{data.frame} of the plotted indices: \code{name},
-\code{mu}, \code{mu_star}, \code{sigma} for Morris; \code{name}, \code{S}, \code{ST} (and CI)
+\code{mu}, \code{mu_star}, \code{sigma} for Morris; \code{name}, \code{S}, \code{ST} (and CI
 columns when present) for Sobol.
 }
 \description{

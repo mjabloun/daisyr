@@ -19,9 +19,12 @@ replacement text ready to hand to \code{\link[=render_one_template]{render_one_t
 }
 \description{
 Given a full set of current values for every free parameter in \code{config}
-(\code{\link[=param_config_names]{param_config_names()}}), computes: (a) the direct placeholder
+(\code{\link[=param_config_names]{param_config_names()}}), computes: (a) the direct and derived placeholder
 substitutions, and (b) the rendered \verb{(x y)} text block for every
 \code{plf_curves} entry (by evaluating its curve at the fixed \code{x_values} using
-the current values of its shape parameters).
+the current values of its shape parameters) and (c) the \verb{(Leaf ...)} /
+\verb{(Stem ...)} text for every \code{partit} entry (see \code{\link[=render_partit]{render_partit()}}).
+Derived \code{expression} parameters are computed here if they are not already
+in \code{values}.
 }
 \keyword{internal}

@@ -38,8 +38,8 @@ ranges attached as an \code{"config"} attribute for convenience.
 \description{
 Wraps \code{sensitivity::morris()}/\code{sensitivity::soboljansen()} in "decoupled"
 mode (\code{model = NULL}), using every free parameter in \code{config}
-(\code{\link[=param_config_names]{param_config_names()}}) - i.e. direct parameters and \code{plf_curves}
-shape parameters alike - as the design columns, with bounds taken from
+(\code{\link[=param_config_names]{param_config_names()}}) - i.e. direct parameters and \code{plf_curves} /
+\code{partit} shape parameters alike - as the design columns, with bounds taken from
 the config's \code{min}/\code{max} columns. Decoupled mode is used because Daisy
 runs are expensive external processes, not plain R functions: the design
 matrix is generated up front, evaluated externally with \code{\link[=run_sa_design]{run_sa_design()}},

@@ -36,8 +36,8 @@ default_values <- stats::setNames(config$parameters$default, config$parameters$n
 render_templates(config, values = default_values, template_dir = example_dir, output_dir = ".")
 run_daisy("test-optim.dai", working_dir = ".", show_log = TRUE)
 
-sim <- read_dlf("Output/interval_water_content.dlf")
-sim <- add_date(sim, "interval_water_content")
+sim <- read_dlf("Output/interval_water_content.dlf") |>
+  add_date("interval_water_content")
 print(sim[, .(Date, hour, tocalibrate)])
 
 # 3. Define the objective: daily-averaged simulated Theta ("tocalibrate")

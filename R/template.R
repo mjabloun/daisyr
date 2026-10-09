@@ -55,8 +55,10 @@ format_plf_block <- function(x, y, format = "%.4f") {
 #' ([param_config_names()]), computes: (a) the direct and derived placeholder
 #' substitutions, and (b) the rendered `(x y)` text block for every
 #' `plf_curves` entry (by evaluating its curve at the fixed `x_values` using
-#' the current values of its shape parameters). Derived `expression` parameters are
-#' computed here if they are not already in `values`.
+#' the current values of its shape parameters) and (c) the `(Leaf ...)` /
+#' `(Stem ...)` text for every `partit` entry (see [render_partit()]).
+#' Derived `expression` parameters are computed here if they are not already
+#' in `values`.
 #'
 #' @param config A `daisyr_param_config` object.
 #' @param values Named numeric vector covering every name in
@@ -92,6 +94,11 @@ build_substitutions <- function(config, values) {
     add_sub(pc$from_file, pc$to_file, pc$placeholder, block)
   }
 
+  for (pt in config$partit %||% list()) {
+    block <- render_partit(pt$x_values, values[pt$params], pt$format)
+    add_sub(pt$from_file, pt$to_file, pt$placeholder, block)
+  }
+
   groups
 }
 
@@ -99,7 +106,8 @@ build_substitutions <- function(config, values) {
 #'
 #' For every `(from_file, to_file)` pair referenced in `config`, reads the
 #' template, substitutes every declared placeholder (direct parameters
-#' verbatim, `plf_curves` blocks computed from their shape parameters), and
+#' verbatim, `plf_curves` blocks computed from their shape parameters,
+#' `partit` blocks as paired Leaf and Stem tables), and
 #' writes the result. This is the calibration/SA equivalent of the original
 #' `updateParameters()`/`f.update()` pair, generalised to support multiple
 #' template/target file pairs and PLF curve generation in one call.

@@ -31,11 +31,13 @@ added, grouped by area.
   exactly once in its template before any Daisy run is attempted.
 * `create_param_config()` - scaffolds a starter YAML parameters file (with
   `# TODO` comments marking what to fill in) from just a vector of
-  parameter/PLF names and types, so the schema doesn't need to be
+  parameter, PLF, or Partit names and types, so the schema doesn't need to be
   hand-written from scratch. For `type = "plf"` entries it also scaffolds
   the curve's shape parameters (e.g. `L`/`k`/`x0` for `"logistic"`) and the
-  matching `plf_curves` entry. For `type = "derived"` it scaffolds an
-  `expression` entry (no `default`).
+  matching `plf_curves` entry. For `type = "partit"` it scaffolds the four
+  shoot-partitioning shape parameters and a `partit` entry whose
+  `{{name_PARTIT}}` placeholder is replaced by both Leaf and Stem tables.
+  For `type = "derived"` it scaffolds an `expression` entry (no `default`).
 * Preferred filename is `parameters.yaml`; older `registry.yaml` files still
   load. Function names use `param_config` (`read_param_config()`,
   `validate_param_config()`, and so on).
@@ -58,6 +60,19 @@ added, grouped by area.
   reference plotting an example of each built-in family.
 * Individual PLF points can also be calibrated directly (no curve fit) as a
   plain scalar parameter with `plf` metadata for documentation.
+
+## Shoot partitioning (Partit)
+
+* `partit` entries in `parameters.yaml` sit beside `plf_curves`. Four shape
+  parameters (storage-organ steepness and centre, then leaf steepness and
+  centre) generate both Daisy `(Leaf ...)` and `(Stem ...)` tables. The
+  template placeholder is one token, conventionally `{{Name_PARTIT}}`.
+  Root and `RSR` stay written out in the template. A shape parameter is
+  an input to either a `plf_curves` entry or a `partit` entry.
+* `render_partit()` - builds that Leaf/Stem text from the four parameters.
+* `partit_shape_names()` - the four parameter names for an entry.
+* Selecting any one of the four for calibration pulls in the other three,
+  as for a PLF curve.
 
 ## Running Daisy
 

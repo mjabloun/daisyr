@@ -2,7 +2,7 @@
 % Please edit documentation in R/param_config.R
 \name{expand_calibrate_names}
 \alias{expand_calibrate_names}
-\title{Expand a name selection so each PLF curve is kept as a unit}
+\title{Expand a name selection so each PLF curve and Partit block is kept as a unit}
 \usage{
 expand_calibrate_names(config, names = NULL)
 }
@@ -16,6 +16,7 @@ to mean every config name).}
 Character vector of names, in config order.
 }
 \description{
-If any shape parameter of a \code{plf_curves} entry is included, the rest of
-that curve's \code{params} are added. Direct parameters are unchanged.
+If any shape parameter of a \code{plf_curves} or \code{partit} entry is included,
+the rest of that entry's \code{params} are added. Direct parameters are
+unchanged.
 }

@@ -310,6 +310,63 @@ Individual PLF points can still be calibrated directly (without a curve fit)
 as a plain scalar parameter with `plf` metadata for documentation - see
 `?read_param_config`.
 
+## Shoot partitioning (Partit)
+
+Daisy's `Partit` block splits new assimilate to roots first (`Root` is a
+fraction of the total). What remains is the shoot pool, and the `Leaf` and
+`Stem` tables are fractions of that pool. The storage organ is the
+remainder, so `Leaf + Stem` must not exceed 1. Stem rises and then falls as
+grain fill takes over, which a single monotonic curve cannot do.
+
+A `partit` entry generates both tables from four sigmoids: a rising
+storage-organ share of the shoot, and a falling leaf share of what is left.
+Stem is the rest. The same parameters file can also contain `plf_curves`.
+Root and `RSR` stay as literal tables in the template, outside the
+placeholder.
+
+```yaml
+parameters:
+  - name: Shoot_sorg_steepness
+    default: 10
+    min: 3
+    max: 25
+  - name: Shoot_sorg_centre
+    default: 1.2
+    min: 0.8
+    max: 1.8
+  - name: Shoot_leaf_steepness
+    default: 10
+    min: 3
+    max: 25
+  - name: Shoot_leaf_centre
+    default: 0.6
+    min: 0.3
+    max: 1.0
+
+partit:
+  - name: Shoot
+    from_file: crop_template.dai
+    to_file: crop.dai
+    placeholder: Shoot_PARTIT    # a single {{Shoot_PARTIT}} in the template
+    x_values: [0.0, 0.5, 1.0, 1.5, 2.0]   # fixed DS knots, never calibrated
+    params: [Shoot_sorg_steepness, Shoot_sorg_centre, Shoot_leaf_steepness, Shoot_leaf_centre]
+```
+
+```{r partit-block}
+x <- c(0, 0.5, 1, 1.5, 2)
+cat(render_partit(x, c(10, 1.2, 10, 0.6)))
+```
+
+In the crop template the placeholder sits between the root table and `RSR`:
+
+```
+(Partit
+    (Root (0.00 0.65) (0.51 0.55) (0.72 0.15) (0.95 0.05) (2.00 0.00))
+    {{Shoot_PARTIT}}
+    (RSR  (0.00 0.50) (0.75 0.25) (2.00 0.25))
+)
+```
+
 ```{r cleanup, include = FALSE}
 unlink(run_dir, recursive = TRUE)
 ```

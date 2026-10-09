@@ -27,7 +27,8 @@ Invisibly, a character vector of the \code{to_file} paths written.
 \description{
 For every \verb{(from_file, to_file)} pair referenced in \code{config}, reads the
 template, substitutes every declared placeholder (direct parameters
-verbatim, \code{plf_curves} blocks computed from their shape parameters), and
+verbatim, \code{plf_curves} blocks computed from their shape parameters,
+\code{partit} blocks as paired Leaf and Stem tables), and
 writes the result. This is the calibration/SA equivalent of the original
 \code{updateParameters()}/\code{f.update()} pair, generalised to support multiple
 template/target file pairs and PLF curve generation in one call.

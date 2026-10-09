@@ -12,16 +12,18 @@ create_param_config(
 )
 }
 \arguments{
-\item{parameters}{Character vector of parameter (or PLF) names.}
+\item{parameters}{Character vector of parameter, PLF, or Partit names.}
 
 \item{type}{Character scalar or vector, recycled to \code{length(parameters)}.
 Either \code{"scalar"} (a plain calibration/SA parameter, substituted
 directly into a \code{{{name}}} placeholder), \code{"derived"} (a placeholder
 whose value is an arithmetic \code{expression} in other parameters, e.g.
-\code{1 - silt - sand}), or \code{"plf"} (a piecewise-linear
+\code{1 - silt - sand}), \code{"plf"} (a piecewise-linear
 function generated from a curve family's shape parameters, scaffolding
 both the shape parameters and the \code{plf_curves} entry that consumes
-them - see \code{curve}).}
+them - see \code{curve}), or \code{"partit"} (a Daisy shoot-partitioning block:
+four sigmoid parameters and a \code{partit} entry whose \code{{{name_PARTIT}}}
+placeholder is replaced by both the Leaf and Stem tables).}
 
 \item{curve}{Character scalar or vector, recycled to \code{length(parameters)}.
 One of \code{\link[=known_plf_curves]{known_plf_curves()}}. Only used for entries with \code{type = "plf"};
@@ -44,6 +46,15 @@ leaves behind (marked \verb{# TODO}), then load it with
 \code{\link[=read_param_config]{read_param_config()}} and check it with \code{\link[=validate_param_config]{validate_param_config()}}. See
 \code{vignette("daisyr")} for the full schema.
 }
+\details{
+\code{type = "partit"} scaffolds the four shoot-partitioning shape parameters
+(\code{sorg_steepness}, \code{sorg_centre}, \code{leaf_steepness}, \code{leaf_centre}) and a
+\code{partit} entry. The template placeholder is \code{{{name_PARTIT}}}, replaced
+by both the \verb{(Leaf ...)} and \verb{(Stem ...)} tables. See \code{\link[=render_partit]{render_partit()}}.
+}
 \examples{
-cat(create_param_config(c("Ap_clay", "LAIvsDS"), type = c("scalar", "plf")))
+cat(create_param_config(
+  c("Ap_clay", "LAIvsDS", "Shoot"),
+  type = c("scalar", "plf", "partit")
+))
 }

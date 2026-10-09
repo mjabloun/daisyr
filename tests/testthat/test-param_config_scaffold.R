@@ -68,5 +68,5 @@ test_that("create_param_config scaffolds a derived parameter", {
 
 test_that("create_param_config rejects duplicate names and bad types", {
   expect_error(create_param_config(c("a", "a")), "duplicate")
-  expect_error(create_param_config("a", type = "not_a_type"), "scalar', 'plf', or 'derived'")
+  expect_error(create_param_config("a", type = "not_a_type"), "scalar', 'plf', 'partit', or 'derived'")
 })
