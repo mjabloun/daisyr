@@ -26,6 +26,18 @@ test_that("render_templates computes and substitutes a plf_curves block", {
   expect_true(grepl(expected_block, crop_out, fixed = TRUE))
 })
 
+test_that("render_templates substitutes a derived expression parameter", {
+  reg <- read_param_config(test_path("fixtures", "param_config_derived.yaml"))
+  out_dir <- withr_local_tempdir()
+
+  written <- render_templates(reg, c(Ap_silt = 0.20, Ap_sand = 0.55),
+                               template_dir = test_path("fixtures"),
+                               output_dir = out_dir)
+  txt <- paste(readLines(file.path(out_dir, "texture.dai")), collapse = "\n")
+  expect_true(grepl("(clay 0.25)", txt, fixed = TRUE))
+  expect_true(grepl("(silt 0.2)", txt, fixed = TRUE))
+})
+
 test_that("render_templates errors when a required value is missing", {
   reg <- read_param_config(test_path("fixtures", "param_config_ok.yaml"))
   out_dir <- withr_local_tempdir()

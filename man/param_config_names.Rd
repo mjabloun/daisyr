@@ -16,4 +16,6 @@ Character vector of parameter names.
 The flattened set of names that calibration/sensitivity-analysis code
 should treat as inputs: every \code{direct} parameter plus every
 \code{curve_input} parameter (the shape parameters of any \code{plf_curves}).
+Derived parameters (\code{expression} entries) are omitted: they are computed from
+the free names, not sampled.
 }

@@ -30,6 +30,8 @@ evaluate_daisy_candidate <- function(p, config, run_file, daisy_exe = NULL, obje
                                       show_log = FALSE, maximize = FALSE, cmd = NULL,
                                       names = NULL) {
   values <- fill_param_config_values(config, p, names = names)
+  if (!.derived_in_bounds(config, values))
+    return(Inf)
   render_templates(config, values, template_dir = template_dir, output_dir = output_dir)
   run_daisy(run_file, daisy_exe = daisy_exe, working_dir = working_dir,
             show_log = show_log, cmd = cmd)

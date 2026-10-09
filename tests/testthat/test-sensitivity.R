@@ -2,7 +2,11 @@
 # stand-in linear function of the design matrix, the same trick the
 # plot_sa() example uses.
 
-test_that("plot_sa errors on an incomplete Morris design", {
+test_that("sa_design omits derived parameters from the search space", {
+  config <- read_param_config(test_path("fixtures", "param_config_derived.yaml"))
+  design <- sa_design(config, method = "morris", r = 2, seed = 1)
+  expect_equal(colnames(design$X), c("Ap_silt", "Ap_sand"))
+})
   config <- read_param_config(test_path("fixtures", "param_config_ok.yaml"))
   design <- sa_design(config, method = "morris", r = 5, seed = 1)
   expect_error(plot_sa(design), "no elementary effects")

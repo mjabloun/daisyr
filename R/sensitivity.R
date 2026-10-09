@@ -26,7 +26,7 @@ sa_design <- function(config, method = c("morris", "sobol"), r = 10,
                        design = list(type = "oat", levels = 5, grid.jump = 3),
                        N = 1000, scale = TRUE, seed = NULL) {
   method <- match.arg(method)
-  params <- config$parameters
+  params <- config$parameters[config$parameters$role != "derived"]
   if (!is.null(seed)) set.seed(seed)
 
   sa_obj <- if (method == "morris") {
@@ -302,7 +302,7 @@ plot_sa <- function(sa_obj, type = NULL, main = NULL, ...) {
 }
 
 .sa_ggplot_theme <- function() {
-  ggplot2::theme_minimal(base_size = 13) +
+  ggplot2::theme_bw(base_size = 13) +
     ggplot2::theme(legend.position = "bottom")
 }
 

@@ -96,8 +96,36 @@ validate_param_config(config, template_dir = example_dir)
 config$parameters
 ```
 
-`param_config_names()` lists every free parameter (used positionally by
-[calibrate_daisy()] and [sa_design()]):
+`param_config_names()` lists every **free** parameter (used positionally by
+[calibrate_daisy()] and [sa_design()]). Texture fractions that must sum to 1
+are not all free: give the closing term an `expression` instead of `default`/`min`/`max`:
+
+```yaml
+  - name: Ap_silt
+    from_file: soil.dai
+    to_file: soil.dai
+    default: 0.25
+    min: 0.10
+    max: 0.40
+  - name: Ap_sand
+    from_file: soil.dai
+    to_file: soil.dai
+    default: 0.50
+    min: 0.30
+    max: 0.70
+  - name: Ap_clay
+    from_file: soil.dai
+    to_file: soil.dai
+    expression: 1 - Ap_silt - Ap_sand
+    min: 0
+    max: 1
+```
+
+`Ap_clay` still has a `{{Ap_clay}}` placeholder, but calibration and SA only
+move silt and sand. Daisy typically stores these as fractions (0--1), so the
+expression is `1 - silt - sand` rather than `100 - silt - sand`. Optional `min`/`max`
+on an `expression` entry reject candidates that would make clay negative (or above 1)
+without running Daisy.
 
 ```{r param-names}
 param_config_names(config)
@@ -109,7 +137,7 @@ param_config_names(config)
 `(from_file, to_file)` pair declared in the parameters file:
 
 ```{r render, eval = has_daisy}
-default_values <- stats::setNames(config$parameters$default, config$parameters$name)
+default_values <- param_config_default_values(config)
 render_templates(config, values = default_values, template_dir = example_dir, output_dir = ".")
 ```
 

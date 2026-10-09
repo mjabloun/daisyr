@@ -119,3 +119,71 @@ test_that("fill_param_config_values pins unspecified names at default", {
   expect_equal(unname(v[["LAIvsDS_L"]]), 5)
   expect_equal(unname(v[["LAIvsDS_k"]]), 2)
 })
+
+test_that("read_param_config parses a derived expression parameter", {
+  reg <- read_param_config(test_path("fixtures", "param_config_derived.yaml"))
+  expect_equal(reg$parameters[name == "Ap_clay"]$role, "derived")
+  expect_equal(reg$parameters[name == "Ap_silt"]$role, "direct")
+  expect_equal(param_config_names(reg), c("Ap_silt", "Ap_sand"))
+  expect_equal(unname(param_config_default_values(reg)[["Ap_clay"]]), 0.25)
+})
+
+test_that("fill_param_config_values computes derived clay from silt and sand", {
+  reg <- read_param_config(test_path("fixtures", "param_config_derived.yaml"))
+  v <- fill_param_config_values(reg, c(0.20, 0.55), names = c("Ap_silt", "Ap_sand"))
+  expect_equal(unname(v[["Ap_clay"]]), 0.25)
+  expect_equal(unname(v[["Ap_silt"]]), 0.20)
+})
+
+test_that("derived parameters cannot be selected for calibration", {
+  reg <- read_param_config(test_path("fixtures", "param_config_derived.yaml"))
+  expect_error(expand_calibrate_names(reg, "Ap_clay"), "Derived parameter")
+})
+
+test_that("an expression cannot include default, unknown names, or function calls", {
+  tmp <- tempfile(fileext = ".yaml")
+  on.exit(unlink(tmp))
+
+  writeLines("
+parameters:
+  - {name: a, default: 1, min: 0, max: 2, from_file: x.dai, to_file: y.dai, expression: 1 - b}
+", tmp)
+  expect_error(read_param_config(tmp), "omit default")
+
+  writeLines("
+parameters:
+  - {name: a, from_file: x.dai, to_file: y.dai, expression: 1 - does_not_exist}
+", tmp)
+  expect_error(read_param_config(tmp), "unknown name")
+
+  writeLines("
+parameters:
+  - {name: a, default: 1, min: 0, max: 2, from_file: x.dai, to_file: y.dai}
+  - {name: b, from_file: x.dai, to_file: y.dai, expression: sqrt(a)}
+", tmp)
+  expect_error(read_param_config(tmp), "unsupported operation")
+})
+
+test_that("circular derived expressions are rejected", {
+  tmp <- tempfile(fileext = ".yaml")
+  on.exit(unlink(tmp))
+  writeLines("
+parameters:
+  - {name: a, from_file: x.dai, to_file: y.dai, expression: 1 - b}
+  - {name: b, from_file: x.dai, to_file: y.dai, expression: 1 - a}
+", tmp)
+  expect_error(read_param_config(tmp), "Circular")
+})
+
+test_that("evaluate_daisy_candidate returns Inf when a derived bound is broken", {
+  reg <- read_param_config(test_path("fixtures", "param_config_derived.yaml"))
+  score <- evaluate_daisy_candidate(
+    c(0.40, 0.70),
+    config = reg,
+    run_file = "unused.dai",
+    objective = structure(list(), class = "daisyr_objective"),
+    sim_file = "unused.dlf",
+    names = c("Ap_silt", "Ap_sand")
+  )
+  expect_equal(score, Inf)
+})

@@ -109,6 +109,14 @@ test_that("generate_param_design dice_lhs is in bounds, reproducible, and not ex
                "not extensible")
 })
 
+test_that("generate_param_design on a config omits derived expression names", {
+  skip_if_not_installed("lhs")
+  config <- read_param_config(test_path("fixtures", "param_config_derived.yaml"))
+  des <- generate_param_design(config, n = 4, method = "lhs", seed = 1)
+  expect_equal(names(des), c("Ap_silt", "Ap_sand"))
+  expect_false("Ap_clay" %in% names(des))
+})
+
 test_that("generate_param_design validates inputs", {
   expect_error(generate_param_design(data.frame(name = "a"), n = 2, method = "lhs"),
                "name.*min.*max")

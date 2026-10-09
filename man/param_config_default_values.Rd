@@ -10,8 +10,10 @@ param_config_default_values(config)
 \item{config}{A \code{daisyr_param_config} object.}
 }
 \value{
-Named numeric vector, one value per \code{\link[=param_config_names]{param_config_names()}}.
+Named numeric vector covering every parameter in \code{config}
+(free names plus derived names).
 }
 \description{
-Default values for every config parameter
+Free parameters use their YAML \code{default}. Derived parameters are computed
+from those defaults via their \code{expression}.
 }

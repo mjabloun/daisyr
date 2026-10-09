@@ -17,7 +17,15 @@ added, grouped by area.
   describing free parameters (calibration and sensitivity analysis)
   across one or more `.dai` template/target file pairs.
 * Two parameter roles: `direct` (own placeholder in a template) and
-  `curve_input` (consumed only by a `plf_curves` entry).
+  `curve_input` (consumed only by a `plf_curves` entry). A third role,
+  `derived`, is a placeholder whose YAML entry has `expression` instead of
+  `default` (e.g. `expression: 1 - Ap_silt - Ap_sand`). Derived names are still
+  written into `.dai` files, but they are not free calibration/SA inputs:
+  [param_config_names()] omits them and [fill_param_config_values()] /
+  [render_templates()] compute them after the free parameters are set.
+  Optional `min`/`max` on an `expression` entry reject candidates that break the
+  constraint (calibration returns `Inf` without running Daisy). Expressions are
+  arithmetic (`+`, `-`, `*`, `/`) in other parameter names only.
 * `param_config_names()` - flattened list of every free parameter.
 * `validate_param_config()` checks every declared `{{placeholder}}` exists
   exactly once in its template before any Daisy run is attempted.
@@ -26,7 +34,8 @@ added, grouped by area.
   parameter/PLF names and types, so the schema doesn't need to be
   hand-written from scratch. For `type = "plf"` entries it also scaffolds
   the curve's shape parameters (e.g. `L`/`k`/`x0` for `"logistic"`) and the
-  matching `plf_curves` entry.
+  matching `plf_curves` entry. For `type = "derived"` it scaffolds an
+  `expression` entry (no `default`).
 * Preferred filename is `parameters.yaml`; older `registry.yaml` files still
   load. Function names use `param_config` (`read_param_config()`,
   `validate_param_config()`, and so on).

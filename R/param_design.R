@@ -9,8 +9,10 @@
 #' @return A `data.frame` with character `name` and numeric `min`/`max`.
 #' @keywords internal
 .normalize_param_bounds <- function(params) {
-  if (inherits(params, "daisyr_param_config"))
-    params <- params$parameters
+  if (inherits(params, "daisyr_param_config")) {
+    free <- params$parameters[params$parameters$role != "derived"]
+    params <- free
+  }
 
   as_row <- function(p, fallback_name = NA_character_) {
     if (is.null(p))
@@ -194,7 +196,7 @@
 #' @param params A `data.frame` with columns `name`, `min`, `max` (one row
 #'   per parameter), or a list of `{name, min, max}` entries. Named list
 #'   elements may omit `name`. A `daisyr_param_config` is also accepted (bounds
-#'   taken from its `parameters` table).
+#'   taken from free parameters only; `expression` / derived names are omitted).
 #' @param n Number of design points (rows) to generate.
 #' @param method `"lhs"`, `"dice_lhs"`, or `"sobol"`.
 #' @param seed Optional integer. If given, `set.seed(seed)` is called before

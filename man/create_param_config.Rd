@@ -16,7 +16,9 @@ create_param_config(
 
 \item{type}{Character scalar or vector, recycled to \code{length(parameters)}.
 Either \code{"scalar"} (a plain calibration/SA parameter, substituted
-directly into a \code{{{name}}} placeholder) or \code{"plf"} (a piecewise-linear
+directly into a \code{{{name}}} placeholder), \code{"derived"} (a placeholder
+whose value is an arithmetic \code{expression} in other parameters, e.g.
+\code{1 - silt - sand}), or \code{"plf"} (a piecewise-linear
 function generated from a curve family's shape parameters, scaffolding
 both the shape parameters and the \code{plf_curves} entry that consumes
 them - see \code{curve}).}

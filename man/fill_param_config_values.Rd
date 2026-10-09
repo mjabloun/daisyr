@@ -12,10 +12,12 @@ fill_param_config_values(config, p, names = NULL)
 \item{p}{Numeric vector of values for \code{names} (same order).}
 
 \item{names}{Character vector of names to overwrite. \code{NULL} means
-every config name (so \code{p} must be complete).}
+every free config name (so \code{p} must be complete). Derived names are
+not accepted.}
 }
 \value{
-Named numeric vector covering \code{\link[=param_config_names]{param_config_names()}}.
+Named numeric vector covering every parameter in \code{config}
+(free names plus derived names computed from their \code{expression}).
 }
 \description{
 Used when calibration or a best-parameter run only varies a subset of

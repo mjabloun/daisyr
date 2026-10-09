@@ -1,0 +1,21 @@
+parameters:
+  - name: Ap_silt
+    from_file: texture_template.dai
+    to_file: texture.dai
+    default: 0.25
+    min: 0.10
+    max: 0.40
+
+  - name: Ap_sand
+    from_file: texture_template.dai
+    to_file: texture.dai
+    default: 0.50
+    min: 0.30
+    max: 0.70
+
+  - name: Ap_clay
+    from_file: texture_template.dai
+    to_file: texture.dai
+    expression: 1 - Ap_silt - Ap_sand
+    min: 0
+    max: 1

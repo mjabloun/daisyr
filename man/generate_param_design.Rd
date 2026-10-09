@@ -16,7 +16,7 @@ generate_param_design(
 \item{params}{A \code{data.frame} with columns \code{name}, \code{min}, \code{max} (one row
 per parameter), or a list of \verb{\{name, min, max\}} entries. Named list
 elements may omit \code{name}. A \code{daisyr_param_config} is also accepted (bounds
-taken from its \code{parameters} table).}
+taken from free parameters only; \code{expression} / derived names are omitted).}
 
 \item{n}{Number of design points (rows) to generate.}
 

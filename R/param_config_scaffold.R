@@ -12,6 +12,20 @@
     name, name)
 }
 
+#' Format one derived (`expression`) `parameters:` entry as YAML text
+#' @keywords internal
+.scaffold_derived_entry <- function(name) {
+  sprintf(
+'  - name: %s
+    from_file: REPLACE_ME.dai   # TODO: template file containing a {{%s}} placeholder
+    to_file: REPLACE_ME.dai     # TODO: file Daisy will actually read
+    expression: 1 - OTHER       # TODO: arithmetic using other parameter names (+ - * /)
+    # min: 0                    # optional: reject candidates if the result is outside [min, max]
+    # max: 1
+',
+    name, name)
+}
+
 #' Format the `parameters:` entries for a plf curve's shape parameters
 #' @keywords internal
 .scaffold_plf_shape_entries <- function(name, curve) {
@@ -57,7 +71,9 @@
 #' @param parameters Character vector of parameter (or PLF) names.
 #' @param type Character scalar or vector, recycled to `length(parameters)`.
 #'   Either `"scalar"` (a plain calibration/SA parameter, substituted
-#'   directly into a `{{name}}` placeholder) or `"plf"` (a piecewise-linear
+#'   directly into a `{{name}}` placeholder), `"derived"` (a placeholder
+#'   whose value is an arithmetic `expression` in other parameters, e.g.
+#'   `1 - silt - sand`), or `"plf"` (a piecewise-linear
 #'   function generated from a curve family's shape parameters, scaffolding
 #'   both the shape parameters and the `plf_curves` entry that consumes
 #'   them - see `curve`).
@@ -84,9 +100,9 @@ create_param_config <- function(parameters, type = "scalar", curve = "logistic",
 
   type <- rep(type, length.out = n)
   curve <- rep(curve, length.out = n)
-  bad_type <- setdiff(type, c("scalar", "plf"))
+  bad_type <- setdiff(type, c("scalar", "plf", "derived"))
   if (length(bad_type) > 0)
-    stop("`type` must be 'scalar' or 'plf', got: ", paste(bad_type, collapse = ", "))
+    stop("`type` must be 'scalar', 'plf', or 'derived', got: ", paste(bad_type, collapse = ", "))
 
   scalar_entries <- character(0)
   plf_shape_entries <- character(0)
@@ -96,6 +112,8 @@ create_param_config <- function(parameters, type = "scalar", curve = "logistic",
     nm <- parameters[i]
     if (type[i] == "scalar") {
       scalar_entries <- c(scalar_entries, .scaffold_scalar_entry(nm))
+    } else if (type[i] == "derived") {
+      scalar_entries <- c(scalar_entries, .scaffold_derived_entry(nm))
     } else {
       plf_shape_entries <- c(plf_shape_entries, .scaffold_plf_shape_entries(nm, curve[i]))
       plf_curve_entries <- c(plf_curve_entries, .scaffold_plf_curve_entry(nm, curve[i]))

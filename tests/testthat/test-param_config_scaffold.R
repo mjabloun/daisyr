@@ -59,7 +59,14 @@ test_that("the scaffolded YAML is parseable by read_param_config after filling i
   expect_true(validate_param_config(config, template_dir = dirname(tmp_dai)))
 })
 
+test_that("create_param_config scaffolds a derived parameter", {
+  txt <- create_param_config("Ap_clay", type = "derived")
+  expect_true(grepl("name: Ap_clay", txt))
+  expect_true(grepl("expression:", txt))
+  expect_false(grepl("default:", txt))
+})
+
 test_that("create_param_config rejects duplicate names and bad types", {
   expect_error(create_param_config(c("a", "a")), "duplicate")
-  expect_error(create_param_config("a", type = "not_a_type"), "scalar' or 'plf'")
+  expect_error(create_param_config("a", type = "not_a_type"), "scalar', 'plf', or 'derived'")
 })

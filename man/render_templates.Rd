@@ -11,8 +11,9 @@ render_templates(config, values, template_dir = ".", output_dir = ".")
 \code{\link[=read_param_config]{read_param_config()}}.}
 
 \item{values}{Named numeric vector (or list) with one entry per name in
-\code{\link[=param_config_names]{param_config_names()}} - i.e. every direct parameter and every
-\code{plf_curves} shape parameter.}
+\code{\link[=param_config_names]{param_config_names()}} - i.e. every free direct parameter and every
+\code{plf_curves} shape parameter. Derived \code{expression} parameters are computed
+automatically.}
 
 \item{template_dir}{Character scalar. Directory \code{from_file} paths are
 relative to. Defaults to the current directory.}

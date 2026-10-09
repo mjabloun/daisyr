@@ -52,10 +52,11 @@ format_plf_block <- function(x, y, format = "%.4f") {
 #' Render all substitutions implied by a config for a given parameter vector
 #'
 #' Given a full set of current values for every free parameter in `config`
-#' ([param_config_names()]), computes: (a) the direct placeholder
+#' ([param_config_names()]), computes: (a) the direct and derived placeholder
 #' substitutions, and (b) the rendered `(x y)` text block for every
 #' `plf_curves` entry (by evaluating its curve at the fixed `x_values` using
-#' the current values of its shape parameters).
+#' the current values of its shape parameters). Derived `expression` parameters are
+#' computed here if they are not already in `values`.
 #'
 #' @param config A `daisyr_param_config` object.
 #' @param values Named numeric vector covering every name in
@@ -66,6 +67,7 @@ format_plf_block <- function(x, y, format = "%.4f") {
 #'   replacement text ready to hand to [render_one_template()].
 #' @keywords internal
 build_substitutions <- function(config, values) {
+  values <- .apply_param_expressions(config, values)
   needed <- param_config_names(config)
   missing <- setdiff(needed, names(values))
   if (length(missing) > 0)
@@ -78,9 +80,10 @@ build_substitutions <- function(config, values) {
     groups[[key]]$subs[[placeholder]] <<- text
   }
 
-  direct <- config$parameters[config$parameters$role == "direct", ]
-  for (i in seq_len(nrow(direct))) {
-    add_sub(direct$from_file[i], direct$to_file[i], direct$name[i], format(values[[direct$name[i]]]))
+  written <- config$parameters[config$parameters$role %in% c("direct", "derived"), ]
+  for (i in seq_len(nrow(written))) {
+    nm <- written$name[i]
+    add_sub(written$from_file[i], written$to_file[i], nm, format(values[[nm]]))
   }
 
   for (pc in config$plf_curves) {
@@ -104,8 +107,9 @@ build_substitutions <- function(config, values) {
 #' @param config A `daisyr_param_config` object, as returned by
 #'   [read_param_config()].
 #' @param values Named numeric vector (or list) with one entry per name in
-#'   [param_config_names()] - i.e. every direct parameter and every
-#'   `plf_curves` shape parameter.
+#'   [param_config_names()] - i.e. every free direct parameter and every
+#'   `plf_curves` shape parameter. Derived `expression` parameters are computed
+#'   automatically.
 #' @param template_dir Character scalar. Directory `from_file` paths are
 #'   relative to. Defaults to the current directory.
 #' @param output_dir Character scalar. Directory `to_file` paths are written

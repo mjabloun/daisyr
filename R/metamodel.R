@@ -475,6 +475,7 @@ calibrate_daisy_ego <- function(metamodel, config, run_file, daisy_exe = NULL, o
          "parameters has [", paste(param_names, collapse = ", "), "]")
 
   params <- config$parameters
+  hit <- match(param_names, params$name)
   real_fun <- function(p) {
     evaluate_daisy_candidate(p, config, run_file, daisy_exe, objective, sim_file,
                              working_dir = working_dir, template_dir = template_dir,
@@ -484,7 +485,7 @@ calibrate_daisy_ego <- function(metamodel, config, run_file, daisy_exe = NULL, o
 
   fit <- DiceOptim::EGO.nsteps(
     model = metamodel$km, fun = real_fun, nsteps = nsteps,
-    lower = params$min, upper = params$max,
+    lower = params$min[hit], upper = params$max[hit],
     control = control, kmcontrol = kmcontrol
   )
 

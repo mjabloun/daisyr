@@ -1,0 +1,4 @@
+(defhorizon Ap FAO3
+  (clay {{Ap_clay}})
+  (silt {{Ap_silt}})
+  (sand {{Ap_sand}}))

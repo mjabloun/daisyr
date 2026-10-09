@@ -12,8 +12,9 @@ read_param_config(path)
 \value{
 An object of class \code{daisyr_param_config}, a list with elements
 \code{parameters} (a \code{data.table}, one row per scalar parameter, with an added
-\code{role} column: \code{"direct"} or \code{"curve_input"}) and \code{plf_curves} (a list
-of curve specifications, unchanged from the YAML other than validation).
+\code{role} column: \code{"direct"}, \code{"curve_input"}, or \code{"derived"}), \code{plf_curves}
+(a list of curve specifications), and \code{derived_expressions} (compiled
+\code{expression} formulas in evaluation order, empty if none).
 }
 \description{
 The file describes every free parameter used for calibration and/or
@@ -26,12 +27,17 @@ See \code{vignette("daisyr", package = "daisyr")} for a worked example.
 In short, the YAML file has two top-level keys:
 
 \describe{
-\item{\code{parameters}}{A list of scalar parameters. Each entry has \code{name},
-\code{default}, \code{min}, \code{max}, and either (a) \code{from_file}/\code{to_file} for a
-parameter substituted directly into a \code{{{name}}} placeholder in a
-template, optionally with \code{plf} metadata (\code{name}/\code{index}) documenting
-that it corresponds to one point of a PLF, or (b) no \code{from_file}, in
-which case it must be referenced by a \code{plf_curves} entry's \code{params}.}
+\item{\code{parameters}}{A list of scalar parameters. Each entry has \code{name}
+and either (a) \code{default}/\code{min}/\code{max} for a free parameter, plus
+\code{from_file}/\code{to_file} when it is substituted into a \code{{{name}}}
+placeholder (optionally with \code{plf} metadata), or no \code{from_file} when
+it is only referenced by a \code{plf_curves} entry's \code{params}; or (b)
+\code{expression} instead of \code{default}, an arithmetic formula in other
+parameter names (e.g. \code{1 - Ap_silt - Ap_sand}). An \code{expression}
+parameter is still written to its \code{{{name}}} placeholder, but it is
+not a free calibration/SA input: its value is computed after the free
+parameters are set. Optional \code{min}/\code{max} on an \code{expression} entry are
+validity bounds (candidates that break them are rejected).}
 \item{\code{plf_curves}}{A list of piecewise-linear-function generators (see
 \code{\link[=render_plf_curve]{render_plf_curve()}}). Each
 entry has \code{name}, \code{from_file}, \code{to_file}, \code{placeholder}, \code{x_values}
